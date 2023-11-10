@@ -1,4 +1,4 @@
-# WisBlock Environmental Datalogger Firmware
+# StringSight Firmware
 
 ## How to use this Repo
 
@@ -15,7 +15,6 @@ Useful links:
 - [Port Schema Library](./lib/PortSchema) implements a LoRaWAN Port Schema design for encoding payload data
 - [Sensor Helper Library](./lib/SensorHelper/) for reading Rak WisBlock and other sensors
 - [Combined firmware example](./examples/Combined_lib_example/) that is a good leaping off point for further firmware development with the libraries
-- Web app side [decoder](../Ubidots/PayloadDecoder/)
 
 ## Environment Setup
 
@@ -23,7 +22,7 @@ First you'll need to [install VS Code](https://code.visualstudio.com/Download) -
 
 Then you'll want to follow [this](https://docs.rakwireless.com/Knowledge-Hub/Learn/Board-Support-Package-Installation-in-PlatformIO/) guide to setup Platform IO and install the necessary files for _LoRaWan-RAK4630.h_. If the link in step 6 is broken, use [this](https://github.com/RAKWireless/WisBlock) one.
 
-> NOTE: I have found that the wiscore files may need to be re-copied after an update to PIO.
+> NOTE: Kalina has found that the wiscore files may need to be re-copied after an update to PIO.
 
 Then depending on what you're doing you can either:
 
@@ -43,7 +42,7 @@ You should then be ready to start using the [libraries](./lib/) from this repo a
 
 ## Examples
 
-I would recommend starting with the lib/LoRaWAN_functs/examples/simple_lorawan_example.cpp to get the LoRaWAN module set up.
+Kalina would recommend starting with the lib/LoRaWAN_functs/examples/simple_lorawan_example.cpp to get the LoRaWAN module set up.
 
 Just **copy the example code into your main.cpp** and follow the [instructions](./lib/LoRaWAN_functs/#otaa-keys) to set up your OTAA keys (remember they need to be stored in the same directory as LoRaWAN_functs.h).
 
@@ -51,4 +50,4 @@ Then move onto the example below.
 
 ### Working Combined Firmware Example
 
-I've provided an [example](./examples/Combined_lib_example/) that that combines the four libraries, along with the Semaphore module that allows the chips to achieve their low power states. This is the example I would base further development of WisBlock firmware off of.
+Kalina has provided an [example](./examples/Combined_lib_example/) that that combines the four libraries, along with the Semaphore module that allows the chips to achieve their low power states. This is the example Kalina would base further development of WisBlock firmware off of. It is based upon this example that StringSight's firmware has been developed.
