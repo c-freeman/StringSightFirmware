@@ -13,6 +13,17 @@
 
 #include "Logging.h" /**< Go here to change the logging level for the entire application. */
 
+// Added ///
+#include "SerialDataExporter.h"
+#include <Arduino.h>
+#include <Wire.h>
+#ifdef _VARIANT_RAK4630_
+#include <Adafruit_TinyUSB.h>
+#endif
+
+#define NO_OF_SAMPLES 32
+
+
 static const _eAnalogReference DEFAULT_ANALOG_REFERENCE = AR_DEFAULT; // Analog reference to default = 3.6V.
 static const int DEFAULT_ANALOG_RESOLUTION = 10;                      // Resolution to default 10-bit (0..4095).
 static const uint32_t DEFAULT_OVERSAMPLING = 0;                       // Oversampling disabled
@@ -64,7 +75,7 @@ class AnalogSensor {
      */
     float getSensorMV(void);
 
-  private:
+  //private:
     /**
      * @brief Read sensor voltage.
      * @return Reading in mV.
@@ -83,6 +94,7 @@ class AnalogSensor {
     uint32_t oversampling;         // ADC oversampling
     float compensation_factor = 1; // Compensation factor sensor/pin - depends on the board hardware.
     float real_MV_per_LSB;         // Conversion factor that turns the raw ADC reading into the voltage
+    float rawADC = 0;
 };
 
 static const uint8_t BATTERY_PIN = WB_A0;
@@ -125,4 +137,67 @@ class BatteryLevel : public AnalogSensor {
      * @return Battery SoC (%).
      */
     float mvToSoC(float mvolts);
+};
+
+static const uint8_t CURRENT_SENSOR_PIN = WB_A1;
+static const float CURRENT_SENSOR_COMPENSATION_FACTOR = 1/0.6; 
+
+/**
+ * @brief CurrentSensor inherits the AnalogSensor class adding an SoC function for sending via LoRaWAN.
+ */
+class CurrentSensor : public AnalogSensor {
+  public:
+    /**
+     * @brief Construct a new Current Sensor object with default ADC values.
+     * pin = CURRENT_SENSOR_PIN.
+     * analog_ref = 3.0V (default = 3.6V).
+     * analog_resolution = 10-bit (0-1023) // 12 bit would be (0..4095).
+     * oversampling = 128 // DEFAULT_OVERSAMPLING. 
+     */
+    CurrentSensor(void) : AnalogSensor(CURRENT_SENSOR_PIN, AR_INTERNAL_3_0, 12, 128){};
+
+    /**
+     * @brief Construct a new Current Sensor object.
+     * pin = CURRENT_SENSOR_PIN.
+     * oversampling = DEFAULT_OVERSAMPLING.
+     * @param analog_ref ADC analog reference.
+     * @param analog_resolution ADC resolution.
+     */
+    CurrentSensor(_eAnalogReference analog_ref, int analog_resolution)
+        : AnalogSensor(CURRENT_SENSOR_PIN, analog_ref, analog_resolution, 128){};
+
+    /**
+     * @brief Gets the ADC ready by setting the compensation factor to CURRENT_SENSOR_COMPENSATION_FACTOR.
+     */
+
+    void PowerOff();
+    void PowerOn();
+
+    void ADCInit(uint8_t pin_mode);
+
+    bool currentSensorCalibrationMode();
+    
+    void zeroCurrentOffsetCalibration();
+
+    /**
+     * @brief  Read Sensor value and convert from mV to CURRENT SENSOR Amp.
+     * Uses 
+     * @return CURRENT SENSOR Amp value.
+     */
+    float readCurrentAmp();
+
+    float zeroCurrentOffset = 0;                /* for zeroing current calibration */
+
+    int numberOfSamples = 2000;
+    float currentSample = 0;
+    float current_sensor_mV = 0;
+    float current_sensor_mV_sum = 0;            /* for zeroing current calibration */
+    float current_sample_mv = 0;                /* for zeroing current calibration */
+    float currentSampleRead  = 0;               /* to read the value of a sample */
+    float currentSampleSum   = 0;               /* accumulation of sample readings */
+    float currentSensorADCvalSum = 0;
+    float ADCaverage = 0;
+
+    // Enable this calibration mode if you want to calibrate the current sensor to with zero current while initalising
+  bool current_sensor_zero_calibrate_mode = 1;
 };

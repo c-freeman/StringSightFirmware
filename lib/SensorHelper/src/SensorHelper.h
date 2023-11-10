@@ -32,6 +32,7 @@
  * @param useRAK1901
  * @param useRAK1906
  * @return True if successful. False if not.
+ *
  */
 bool initSensors(const portSchema *port_settings, bool useRAK1901, bool useRAK1906);
 
@@ -41,3 +42,9 @@ bool initSensors(const portSchema *port_settings, bool useRAK1901, bool useRAK19
  * @return The sensor data in sensorData struct format.
  */
 sensorData getSensorData(const portSchema *port_settings);
+
+void SensorPowerOff(const portSchema *port_settings);
+
+void SensorPowerOn(const portSchema *port_settings);
+
+

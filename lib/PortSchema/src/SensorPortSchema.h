@@ -14,6 +14,9 @@
  */
 
 #include <math.h>
+#include <stdint.h>
+#include "Logging.h"        /**< Go here to change the logging level for the entire application. */
+
 
 /**
  * @brief Struct with data from sensors and their validity.
@@ -46,6 +49,11 @@ struct sensorData {
         float longitude;
         bool is_valid;
     } location; /**< Location latitude & longitude in degrees. */
+     struct {
+        float value;
+        bool is_valid;
+        float ADCval;
+    } current_A; /**< Current sensor A. */
 };
 
 /** @brief sensorPortSchema describes how each sensors data should be encoded. */
@@ -147,6 +155,14 @@ static const sensorPortSchema locationSchema = { // units: degrees
     .n_bytes = 8,                                // split equally: 4 bytes lat, 4 bytes lng
     .n_values = 2,                               // lat and lng
     .scale_factor = pow(10.0, 4),                // 4 decimal places
+    .is_signed = true
+};
+
+static const sensorPortSchema currentSensorSchema = { // units: A
+    // chaned vals to 2 and bytes to 4
+    .n_bytes = 6,
+    .n_values = 2,      // could try changing this for future iterations (add more values)
+    .scale_factor = pow(10.0, 2), // 2 decimal places
     .is_signed = true
 };
 

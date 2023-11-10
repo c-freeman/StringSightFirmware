@@ -14,6 +14,11 @@
 
 #include <Arduino.h>
 #include <stdarg.h>
+////// ADDED /////
+#include <bluefruit.h>
+#include <Wire.h>
+/// ADDED //
+
 
 enum class LOG_LEVEL {
     NONE = 0,  /**< Disable logging. No messages are logged. */

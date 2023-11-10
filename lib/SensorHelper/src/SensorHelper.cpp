@@ -16,6 +16,7 @@ bool USERAK1906 = false;
 RAK1901 tempHumiSensor;
 RAK1906 enviroSensor;
 BatteryLevel batLvl;
+CurrentSensor HSTS016LSensor;
 // GPSClass gps;
 // AnalogSensor analogsensorexample(sensor pin, ADC reference voltage, ADC resolution, ADC oversampling);
 
@@ -34,6 +35,19 @@ bool initSensors(const portSchema *port_settings, bool useRAK1901, bool useRAK19
     // battery voltage setup
     if (port_settings->sendBatteryVoltage) {
         batLvl.ADCInit();
+    }
+
+    // current sensor setup
+    if (port_settings->sendCurrentSensor) {
+        HSTS016LSensor.ADCInit(INPUT_PULLDOWN);
+        if (HSTS016LSensor.currentSensorCalibrationMode()) {
+            log(LOG_LEVEL::INFO, "Calibration for zero current about to start in 3 seconds.");
+            delay(3000);
+            HSTS016LSensor.zeroCurrentOffsetCalibration();
+            delay(500);
+            log(LOG_LEVEL::INFO, "Calibration for zero current finsihed.");
+        }
+        
     }
 
     // 1906 or 1901 setup
@@ -85,6 +99,15 @@ sensorData getSensorData(const portSchema *port_settings) {
         data.battery_mv.is_valid = true;
     }
 
+    // current sensor 
+    if (port_settings->sendCurrentSensor) {
+        data.current_A.value = HSTS016LSensor.readCurrentAmp();
+        // added ADC val
+        data.current_A.ADCval = HSTS016LSensor.ADCaverage;
+        data.current_A.is_valid = true;
+
+    }
+
     if (port_settings->sendTemperature || port_settings->sendRelativeHumidity || port_settings->sendAirPressure ||
         port_settings->sendGasResistance) {
         if (USERAK1906) {
@@ -129,4 +152,18 @@ sensorData getSensorData(const portSchema *port_settings) {
     // }
 
     return data;
+}
+
+void SensorPowerOff(const portSchema *port_settings) {
+        // current sensor 
+    if (port_settings->sendCurrentSensor) {
+        HSTS016LSensor.PowerOff();
+    }
+}
+
+void SensorPowerOn(const portSchema *port_settings) {
+    // current sensor 
+    if (port_settings->sendCurrentSensor) {
+        HSTS016LSensor.PowerOn();
+    }
 }

@@ -33,7 +33,7 @@ uint8_t encodeDataWithSchema(T sensor_data, bool valid, uint8_t *payload_buffer,
     }
 
     if (!sensor_schema->is_signed && (data_to_encode < 0)) {
-        Log.warn("A signed value is being sent for a sensor port schema that is unsigned.");
+        log(LOG_LEVEL::WARN, "A signed value is being sent for a sensor port schema that is unsigned.");
     }
 
     // The total bytes assigned to the sensor is assumed to be split equally amongst the number of values used

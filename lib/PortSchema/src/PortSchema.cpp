@@ -1,5 +1,6 @@
 #include "PortSchema.h"
 
+
 uint8_t portSchema::encodeSensorDataToPayload(sensorData *sensor_data, uint8_t *payload_buffer, uint8_t start_pos) {
     /* If the data should be included in the payload according to the portSchema, then encode the value.
      * he order of these if statements is the order the sensor data will be encoded into the payload and should match
@@ -33,6 +34,13 @@ uint8_t portSchema::encodeSensorDataToPayload(sensorData *sensor_data, uint8_t *
         payload_length = locationSchema.encodeData(sensor_data->location.longitude, sensor_data->location.is_valid,
                                                    payload_buffer, payload_length);
     }
+    if (sendCurrentSensor) {
+        payload_length = currentSensorSchema.encodeData(
+            sensor_data->current_A.value, sensor_data->current_A.is_valid, payload_buffer, payload_length);
+        // Added to try send through raw ADC value
+        payload_length = currentSensorSchema.encodeData(
+            sensor_data->current_A.ADCval, sensor_data->current_A.is_valid, payload_buffer, payload_length);
+    }
     return payload_length;
 }
 
@@ -59,6 +67,11 @@ sensorData portSchema::decodePayloadToSensorData(uint8_t *buffer, uint8_t len, u
         buff_pos = locationSchema.decodeData(&sensor_data.location.latitude, &sensor_data.location.is_valid, buffer, buff_pos);
         buff_pos = locationSchema.decodeData(&sensor_data.location.longitude, &sensor_data.location.is_valid, buffer, buff_pos);
     }
+    if (sendCurrentSensor && (buff_pos < len)) {
+        buff_pos = currentSensorSchema.decodeData(&sensor_data.current_A.value, &sensor_data.current_A.is_valid, buffer, buff_pos);
+        // added to send through ADC value
+        buff_pos = currentSensorSchema.decodeData(&sensor_data.current_A.ADCval, &sensor_data.current_A.is_valid, buffer, buff_pos);
+    }
 
     return sensor_data;
 }
@@ -71,7 +84,8 @@ bool portSchema::operator==(const portSchema &port2) {
             (sendRelativeHumidity == port2.sendRelativeHumidity) &&
             (sendAirPressure      == port2.sendAirPressure     ) &&
             (sendGasResistance    == port2.sendGasResistance   ) &&
-            (sendLocation         == port2.sendLocation        ));
+            (sendLocation         == port2.sendLocation        ) &&
+            (sendCurrentSensor    == port2.sendCurrentSensor   ));
     // clang-format on
 }
 
@@ -85,6 +99,7 @@ portSchema &portSchema::operator+(const portSchema &port2) const {
     combined_port.sendAirPressure      = (this->sendAirPressure      || port2.sendAirPressure     );
     combined_port.sendGasResistance    = (this->sendGasResistance    || port2.sendGasResistance   );
     combined_port.sendLocation         = (this->sendLocation         || port2.sendLocation        );
+    combined_port.sendCurrentSensor    = (this->sendCurrentSensor    || port2.sendCurrentSensor   );
     // clang-format on
     return combined_port;
 }
@@ -117,6 +132,12 @@ portSchema getPort(uint8_t port_number) {
         }
         case 9: {
             return PORT9;
+        }
+        case 10: {
+            return PORT10;
+        }
+        case 11: {
+            return PORT11;
         }
         case 50: {
             return PORT50;

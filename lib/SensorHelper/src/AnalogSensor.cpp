@@ -46,9 +46,12 @@ float AnalogSensor::getSensorMV(void) {
 
 float AnalogSensor::readMV(void) {
     // Get the raw ADC value
-    float raw = analogRead(pin);
+    rawADC = analogRead(pin);
+
     // return converted raw ADC value
-    return (raw * real_MV_per_LSB);
+    //log(LOG_LEVEL::DEBUG, "raw value: %.2f, raw*real_MV_per_LSB %.2f", rawADC, rawADC * real_MV_per_LSB);
+
+    return (rawADC * real_MV_per_LSB);
 }
 
 void AnalogSensor::setRealMVPerLSB() {
@@ -74,6 +77,12 @@ void AnalogSensor::setRealMVPerLSB() {
             break;
         case AR_VDD4: // 3.3V Ref / 4 = 0..0.825V
             adc_analog_ref_mv = 825;
+            break;
+        case AR_INTERNAL_5_0: // 0.6V Ref * 25/3 = 0..5.0V
+            adc_analog_ref_mv = 5000;
+            break;
+        case AR_INTERNAL_3_3: // 0.6V Ref * 25/3 = 0..5.0V
+            adc_analog_ref_mv = 3300;
             break;
     }
 
@@ -128,4 +137,85 @@ float BatteryLevel::mvToSoC(float mvolts) {
 
     log(LOG_LEVEL::DEBUG, "LIPO: %.2f mV = %.2f%%", mvolts, vbat_soc);
     return vbat_soc;
+}
+
+void CurrentSensor::PowerOff(){
+    /* WisBLOCK 12V 5811 Power Off*/
+	pinMode(WB_IO1, OUTPUT);
+	digitalWrite(WB_IO1, LOW);
+	/* WisBLOCK 3.3 V 5811 Power Off*/
+	pinMode(WB_IO2, OUTPUT);
+	digitalWrite(WB_IO2, LOW);
+}
+
+void CurrentSensor::PowerOn(){
+    /* WisBLOCK 12V 5811 Power On*/
+	pinMode(WB_IO1, OUTPUT);
+	digitalWrite(WB_IO1, HIGH);
+	/* WisBLOCK 3.3 V 5811 Power On*/
+	pinMode(WB_IO2, OUTPUT);
+	digitalWrite(WB_IO2, HIGH);
+}
+
+void CurrentSensor::ADCInit(uint8_t pin_mode) {
+    pinMode(pin, pin_mode);
+    /* WisBLOCK 12V 5811 Power On*/
+	pinMode(WB_IO1, OUTPUT);
+	digitalWrite(WB_IO1, HIGH);
+	/* WisBLOCK 3.3 V 5811 Power On*/
+	pinMode(WB_IO2, OUTPUT);
+	digitalWrite(WB_IO2, HIGH);
+
+    // Currently set to 1/0.6
+    setCompensationFactor(CURRENT_SENSOR_COMPENSATION_FACTOR);
+    // Get a single ADC sample and throw it away
+    getSensorMV();
+}
+
+ bool CurrentSensor::currentSensorCalibrationMode() {
+    return current_sensor_zero_calibrate_mode;
+ }
+
+// Calibrates sensor to remove the zero offset
+ void CurrentSensor::zeroCurrentOffsetCalibration() {
+    // For number of samples creates a sum of current sensor mv value
+    for (int i = 0; i < numberOfSamples; i++)                                                               
+        {
+        current_sensor_mV = readMV();  // mV offset 
+        current_sensor_mV_sum = current_sensor_mV_sum + current_sensor_mV;                                      
+        }
+    
+    current_sample_mv = current_sensor_mV_sum/numberOfSamples;
+
+    log(LOG_LEVEL::DEBUG, "Current sample mv = %.2f%% mV", current_sample_mv);
+
+    zeroCurrentOffset = 2500 - current_sample_mv; 
+    current_sensor_mV_sum = 0;
+
+    log(LOG_LEVEL::DEBUG, "Zero current offset = %.2f%% mV", zeroCurrentOffset);
+ }
+
+
+float CurrentSensor::readCurrentAmp() {
+
+    // analogReference(analog_ref);
+    // analogReadResolution(analog_resolution);
+    // analogOversampling(oversampling);
+
+       for (int i = 0; i < numberOfSamples; i++)                                                               
+          {
+            current_sensor_mV = readMV() + zeroCurrentOffset;  // mV offset 
+            currentSensorADCvalSum = rawADC + currentSensorADCvalSum;
+            currentSampleRead = (current_sensor_mV - 2500)*0.032; // 0.032; // 625 mV / 20 A = 31.25, 1/31.25 = 0.032
+            currentSampleSum = currentSampleSum + currentSampleRead ;                                      
+          }
+        
+        ADCaverage = currentSensorADCvalSum/numberOfSamples;
+        currentSample = currentSampleSum/numberOfSamples;
+        currentSampleSum =0;
+        currentSensorADCvalSum = 0;
+    log(LOG_LEVEL::DEBUG, "ADC average value = %.2f%% ", ADCaverage);
+    log(LOG_LEVEL::DEBUG, "Current Sensor value = %.2f%% A", currentSample);
+
+    return currentSample;
 }
